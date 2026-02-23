@@ -1149,3 +1149,71 @@ test('Custom validator builder override by custom validator compiler in child in
   })
   t.equal(two.statusCode, 200)
 })
+
+test('CVE-2026-25223: Schema validation will not be bypass by different content type', async t => {
+  t.plan(12)
+
+  const fastify = Fastify()
+  fastify.post('/', {
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          foo: { type: 'string' }
+        },
+        required: ['foo']
+      }
+    }
+  }, async () => {
+    return 'ok'
+  })
+
+  await fastify.listen({ port: 0 })
+  t.after(() => fastify.close())
+  const address = fastify.server.address()
+  const url = `http://127.0.0.1:${address.port}`
+
+  const sendRequest = (contentType, body) => {
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': contentType },
+      body: JSON.stringify(body)
+    })
+  }
+
+  // Valid requests with proper content-type
+  let found = await sendRequest('application/json', { foo: 'string' })
+  t.equal(found.status, 200)
+  await found.text()
+
+  found = await sendRequest('application/json; charset=utf-8', { foo: 'string' })
+  t.equal(found.status, 200)
+  await found.text()
+
+  found = await sendRequest('application/json ; charset=utf-8', { foo: 'string' })
+  t.equal(found.status, 200)
+  await found.text()
+
+  // Invalid body with proper content-type - should fail validation
+  found = await sendRequest('application/json', { invalid: 'string' })
+  t.equal(found.status, 400)
+  t.equal((await found.json()).code, 'FST_ERR_VALIDATION')
+
+  found = await sendRequest('application/json; charset=utf-8', { invalid: 'string' })
+  t.equal(found.status, 400)
+  t.equal((await found.json()).code, 'FST_ERR_VALIDATION')
+
+  // CVE-2026-25223: Tab character bypass attempts - should be rejected as invalid media type
+  found = await sendRequest('application/json\ta', { invalid: 'string' })
+  t.equal(found.status, 415)
+  t.equal((await found.json()).code, 'FST_ERR_CTP_INVALID_MEDIA_TYPE')
+
+  found = await sendRequest('application/json\ta; charset=utf-8', { invalid: 'string' })
+  t.equal(found.status, 415)
+  t.equal((await found.json()).code, 'FST_ERR_CTP_INVALID_MEDIA_TYPE')
+
+  // Other invalid content-type formats
+  found = await sendRequest('application/ json', { invalid: 'string' })
+  t.equal(found.status, 415)
+  t.equal((await found.json()).code, 'FST_ERR_CTP_INVALID_MEDIA_TYPE')
+})

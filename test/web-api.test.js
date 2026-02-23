@@ -7,6 +7,7 @@ const fs = require('node:fs')
 const semver = require('semver')
 const { Readable } = require('node:stream')
 const { fetch: undiciFetch } = require('undici')
+const { setTimeout: sleep } = require('node:timers/promises')
 
 if (semver.lt(process.versions.node, '18.0.0')) {
   t.skip('Response or ReadableStream not available, skipping test')
@@ -205,4 +206,76 @@ test('allow to pipe with undici.fetch', async (t) => {
 
   t.equal(response.statusCode, 200)
   t.same(response.json(), { ok: true })
+})
+
+test('WebStream should respect backpressure', async (t) => {
+  t.plan(3)
+
+  const fastify = Fastify()
+  t.teardown(() => fastify.close())
+
+  let drainEmittedAt = 0
+  let secondWriteAt = 0
+  let resolveSecondWrite
+  const secondWrite = new Promise((resolve) => {
+    resolveSecondWrite = resolve
+  })
+
+  fastify.get('/', function (request, reply) {
+    const raw = reply.raw
+    const originalWrite = raw.write.bind(raw)
+    const bufferedChunks = []
+    let wroteFirstChunk = false
+
+    raw.once('drain', () => {
+      for (const bufferedChunk of bufferedChunks) {
+        originalWrite(bufferedChunk)
+      }
+    })
+
+    raw.write = function (chunk, encoding, cb) {
+      if (!wroteFirstChunk) {
+        wroteFirstChunk = true
+        bufferedChunks.push(Buffer.from(chunk))
+        sleep(100).then(() => {
+          drainEmittedAt = Date.now()
+          raw.emit('drain')
+        })
+        if (typeof cb === 'function') {
+          cb()
+        }
+        return false
+      }
+      if (!secondWriteAt) {
+        secondWriteAt = Date.now()
+        resolveSecondWrite()
+      }
+      return originalWrite(chunk, encoding, cb)
+    }
+
+    const stream = new ReadableStream({
+      start (controller) {
+        controller.enqueue(Buffer.from('chunk-1'))
+      },
+      pull (controller) {
+        controller.enqueue(Buffer.from('chunk-2'))
+        controller.close()
+      }
+    })
+
+    reply.header('content-type', 'text/plain').send(stream)
+  })
+
+  await fastify.listen({ port: 0 })
+
+  const response = await undiciFetch(`http://localhost:${fastify.server.address().port}/`)
+  const bodyPromise = response.text()
+
+  await secondWrite
+  await sleep(120)
+  const body = await bodyPromise
+
+  t.equal(response.status, 200)
+  t.equal(body, 'chunk-1chunk-2')
+  t.ok(secondWriteAt >= drainEmittedAt)
 })
