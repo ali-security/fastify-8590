@@ -6,7 +6,7 @@ on:
       - master
       - main
     paths:
-      - "**/Ecosystem.md"
+      - '**/Ecosystem.md'
 
 permissions:
   contents: read # to fetch code (actions/checkout)
@@ -14,7 +14,7 @@ permissions:
 jobs:
   build:
     name: Lint Ecosystem Order
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Code

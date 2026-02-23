@@ -3,12 +3,12 @@ name: Internal Links Check
 on:
   pull_request:
     paths:
-      - 'docs/**'
+      - docs/**
       - '*.md'
 
 jobs:
   linkChecker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repo
         uses: actions/checkout@v4

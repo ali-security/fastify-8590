@@ -5,7 +5,7 @@ on:
 
 jobs:
   check-coverage:
-    runs-on: windows-latest
+    runs-on: windows-2022
     permissions:
       contents: read
     steps:
@@ -15,8 +15,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
-          cache: 'npm'
+          node-version: lts/*
+          cache: npm
           cache-dependency-path: package.json
 
       - name: Install
