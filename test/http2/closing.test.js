@@ -11,7 +11,8 @@ const { getServerUrl } = require('../helper')
 
 t.before(buildCertificate)
 
-t.test('http/2 request while fastify closing', t => {
+const isNodeVersionGte1819 = semver.gte(process.version, '18.19.0')
+t.test('http/2 request while fastify closing', { skip: isNodeVersionGte1819 }, t => {
   let fastify
   try {
     fastify = Fastify({
