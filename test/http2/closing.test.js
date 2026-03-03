@@ -6,14 +6,12 @@ const http2 = require('node:http2')
 const { promisify } = require('node:util')
 const connect = promisify(http2.connect)
 const { once } = require('node:events')
-const semver = require('semver')
 const { buildCertificate } = require('../build-certificate')
 const { getServerUrl } = require('../helper')
 
 t.before(buildCertificate)
 
-const isNodeVersionGte1819 = semver.gte(process.version, '18.19.0')
-t.test('http/2 request while fastify closing', { skip: isNodeVersionGte1819 }, t => {
+t.test('http/2 request while fastify closing', { skip: true }, t => {
   let fastify
   try {
     fastify = Fastify({
