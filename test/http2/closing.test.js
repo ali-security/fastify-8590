@@ -42,7 +42,7 @@ t.test('http/2 request while fastify closing', t => {
           // Nothing to do here,
           // we are not interested in this error that might
           // happen or not
-        })
+        }).end()
         fastify.close()
       })
       session.on('error', () => {
@@ -89,7 +89,7 @@ t.test('http/2 request while fastify closing - return503OnClosing: false', t => 
           // Nothing to do here,
           // we are not interested in this error that might
           // happen or not
-        })
+        }).end()
         fastify.close()
       })
       session.on('error', () => {
