@@ -15,7 +15,8 @@ t.test('http/2 request while fastify closing', t => {
   let fastify
   try {
     fastify = Fastify({
-      http2: true
+      http2: true,
+      forceCloseConnections: false
     })
     t.pass('http2 successfully loaded')
   } catch (e) {
@@ -62,7 +63,8 @@ t.test('http/2 request while fastify closing - return503OnClosing: false', t => 
   try {
     fastify = Fastify({
       http2: true,
-      return503OnClosing: false
+      return503OnClosing: false,
+      forceCloseConnections: false
     })
     t.pass('http2 successfully loaded')
   } catch (e) {
