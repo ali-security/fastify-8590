@@ -6,6 +6,7 @@ const http2 = require('node:http2')
 const { promisify } = require('node:util')
 const connect = promisify(http2.connect)
 const { once } = require('node:events')
+const semver = require('semver')
 const { buildCertificate } = require('../build-certificate')
 const { getServerUrl } = require('../helper')
 
