@@ -15,8 +15,7 @@ t.test('http/2 request while fastify closing', t => {
   let fastify
   try {
     fastify = Fastify({
-      http2: true,
-      forceCloseConnections: false
+      http2: true
     })
     t.pass('http2 successfully loaded')
   } catch (e) {
@@ -43,7 +42,7 @@ t.test('http/2 request while fastify closing', t => {
           // Nothing to do here,
           // we are not interested in this error that might
           // happen or not
-        }).end()
+        })
         fastify.close()
       })
       session.on('error', () => {
@@ -63,8 +62,7 @@ t.test('http/2 request while fastify closing - return503OnClosing: false', t => 
   try {
     fastify = Fastify({
       http2: true,
-      return503OnClosing: false,
-      forceCloseConnections: false
+      return503OnClosing: false
     })
     t.pass('http2 successfully loaded')
   } catch (e) {
@@ -91,7 +89,7 @@ t.test('http/2 request while fastify closing - return503OnClosing: false', t => 
           // Nothing to do here,
           // we are not interested in this error that might
           // happen or not
-        }).end()
+        })
         fastify.close()
       })
       session.on('error', () => {
